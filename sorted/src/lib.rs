@@ -51,7 +51,13 @@ impl VisitMut for MatchFinder {
 
             // Identify what is badly sorted.
             for a in &node.arms {
-                let path = get_arm_path(&a.pat).unwrap();
+                let path = if let Some(path) = get_arm_path(&a.pat) {
+                    path
+                } else {
+                    badly_sorted = None;
+                    self.error = Some(syn::Error::new(a.pat.span(), format!("unsupported by #[sorted]")));
+                    break;
+                };
                 let ident = path_as_string(&path);
                 if previous_ident != "" && previous_ident > ident {
                     badly_sorted = Some(&a.pat);
@@ -64,6 +70,9 @@ impl VisitMut for MatchFinder {
             // Figure out where it should go and report the error.
             if let Some(badly_sorted) = badly_sorted {
                 for a in &node.arms {
+                    // We don't need to be careful about path being None here, as we already
+                    // checked for the supported arms in the loop above, and we won't enter
+                    // this second loop if we find one on the first.
                     let path = get_arm_path(&a.pat).unwrap();
                     let ident = path_as_string(&path);
                     if ident > badly_sorted_ident {
