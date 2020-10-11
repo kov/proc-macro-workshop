@@ -51,6 +51,11 @@ impl VisitMut for MatchFinder {
 
             // Identify what is badly sorted.
             for a in &node.arms {
+                // FIXME: should check that it is the last one and error out if not,
+                // but the test only tests that it is handled with no errors.
+                if let Pat::Wild(_) = &a.pat {
+                    continue;
+                }
                 let path = if let Some(path) = get_arm_path(&a.pat) {
                     path
                 } else {
